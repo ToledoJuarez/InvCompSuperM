@@ -27,8 +27,8 @@
         <header class="bg-indigo-700 text-white p-6 rounded-b-[2rem] shadow-lg">
             <h1 class="text-xl font-black mb-4">🛒 REGISTRO EN TIEMPO REAL</h1>
             <div class="space-y-2">
-                <input type="text" id="supermercado" placeholder="Supermercado" class="w-full p-3 rounded-xl text-black border-none text-sm focus:ring-4 focus:ring-yellow-400">
-                <input type="text" id="descripcion" placeholder="Descripción de la compra" class="w-full p-3 rounded-xl text-black border-none text-sm focus:ring-4 focus:ring-yellow-400">
+                <input type="text" id="supermercado" oninput="normalizarInput(this)" placeholder="Supermercado" class="w-full p-3 rounded-xl text-black border-none text-sm focus:ring-4 focus:ring-yellow-400">
+                <input type="text" id="descripcion" oninput="normalizarInput(this)" placeholder="Descripción de la compra" class="w-full p-3 rounded-xl text-black border-none text-sm focus:ring-4 focus:ring-yellow-400">
             </div>
         </header>
 
@@ -66,9 +66,8 @@
             <section class="bg-white p-5 rounded-[2rem] shadow-sm mb-6 border border-slate-200">
                 <div class="space-y-4">
                     <div class="relative">
-                        <input type="text" id="prod_nombre" list="historial_productos" placeholder="Nombre del producto..." 
-                            class="w-full p-4 pr-12 bg-slate-100 rounded-2xl text-lg font-bold focus:ring-2 focus:ring-indigo-500" 
-                            oninput="buscarEnHistorial(this.value)">
+                        <input type="text" id="prod_nombre" list="historial_productos" oninput="normalizarInput(this); buscarEnHistorial(this.value)" placeholder="Nombre del producto..." 
+                            class="w-full p-4 pr-12 bg-slate-100 rounded-2xl text-lg font-bold focus:ring-2 focus:ring-indigo-500" >
                         <button onclick="clearInput('prod_nombre')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500 p-2">
                             <i data-lucide="eraser" class="w-5 h-5"></i>
                         </button>
@@ -87,7 +86,7 @@
                         </div>
                         <div class="relative">
                             <label class="text-[10px] font-bold text-slate-400 ml-2">PESO/TAMAÑO</label>
-                            <input type="text" id="prod_peso" placeholder="Ej: 1 Litro" 
+                            <input type="text" id="prod_peso" oninput="normalizarInput(this)" placeholder="Ej: 1 Litro" 
                                 class="w-full p-4 pr-10 bg-slate-100 rounded-2xl text-lg">
                             <button onclick="clearInput('prod_peso')" class="absolute right-2 top-[34px] text-slate-400 p-2">
                                 <i data-lucide="eraser" class="w-4 h-4"></i>
@@ -189,27 +188,58 @@
             } catch (e) { console.error(e); }
         }
 
+        // function buscarEnHistorial(valor) {
+        //     const dl = document.getElementById('historial_productos');
+        //     const labelCant = document.getElementById('label_cant_anterior');
+        //     dl.innerHTML = "";
+        //     labelCant.classList.add('hidden');
+
+        //     const matches = historialDB.filter(p => p.NOMBRE.toLowerCase().includes(valor.toLowerCase()));
+        //     [...new Set(matches.map(m => m.NOMBRE))].forEach(n => {
+        //         const opt = document.createElement('option');
+        //         opt.value = n;
+        //         dl.appendChild(opt);
+        //     });
+
+        //     // Al encontrar el más reciente (historial ya está invertido)
+        //     const rec = historialDB.find(p => p.NOMBRE.toLowerCase() === valor.toLowerCase());
+        //     if (rec) {
+        //         document.getElementById('prod_peso').value = rec.PESO_O_TAMANO;
+        //         document.getElementById('prod_precio').value = rec.PRECIO;
+        //         labelCant.innerText = `Cant. anterior: ${rec.CANTIDAD}`;
+        //         labelCant.classList.remove('hidden');
+        //         iCant.dispatchEvent(new Event('input'));
+        //     }
+        // }
+        /* */
         function buscarEnHistorial(valor) {
             const dl = document.getElementById('historial_productos');
             const labelCant = document.getElementById('label_cant_anterior');
             dl.innerHTML = "";
-            labelCant.classList.add('hidden');
+            
+            if (!valor) {
+                labelCant.classList.add('hidden');
+                return;
+            }
 
-            const matches = historialDB.filter(p => p.NOMBRE.toLowerCase().includes(valor.toLowerCase()));
+            // Buscamos coincidencias (ambos ya en mayúsculas y sin tildes por la normalización)
+            const matches = historialDB.filter(p => p.NOMBRE.includes(valor));
+            
             [...new Set(matches.map(m => m.NOMBRE))].forEach(n => {
                 const opt = document.createElement('option');
                 opt.value = n;
                 dl.appendChild(opt);
             });
 
-            // Al encontrar el más reciente (historial ya está invertido)
-            const rec = historialDB.find(p => p.NOMBRE.toLowerCase() === valor.toLowerCase());
+            const rec = historialDB.find(p => p.NOMBRE === valor);
             if (rec) {
                 document.getElementById('prod_peso').value = rec.PESO_O_TAMANO;
                 document.getElementById('prod_precio').value = rec.PRECIO;
                 labelCant.innerText = `Cant. anterior: ${rec.CANTIDAD}`;
                 labelCant.classList.remove('hidden');
-                iCant.dispatchEvent(new Event('input'));
+                iCant.dispatchEvent(new Event('input')); // Actualiza subtotal
+            } else {
+                labelCant.classList.add('hidden');
             }
         }
 
@@ -399,6 +429,21 @@
             
             input.focus(); // Mantiene el teclado abierto en móviles
             lucide.createIcons(); // Refresca iconos si es necesario
+        }
+        /**
+         * Normaliza el texto de un input: Mayúsculas y sin tildes.
+         */
+        
+        /* */
+        function normalizarInput(input) {
+            let cursor = input.selectionStart; // Guardamos la posición del cursor
+            let valor = input.value;
+            
+            // Convertir a Mayúsculas y quitar tildes
+            valor = valor.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            
+            input.value = valor;
+            input.setSelectionRange(cursor, cursor); // Restauramos el cursor para que no salte al final
         }
 
         async function enviarAGoogleSheets() {
