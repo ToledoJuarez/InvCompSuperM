@@ -27,42 +27,12 @@
         <header class="bg-indigo-700 text-white p-6 rounded-b-[2rem] shadow-lg">
             <h1 class="text-xl font-black mb-4">🛒 REGISTRO EN TIEMPO REAL</h1>
             <div class="space-y-2">
-                <input type="text" id="supermercado" oninput="normalizarInput(this)" placeholder="Supermercado" class="w-full p-3 rounded-xl text-black border-none text-sm focus:ring-4 focus:ring-yellow-400">
-                <input type="text" id="descripcion" oninput="normalizarInput(this)" placeholder="Descripción de la compra" class="w-full p-3 rounded-xl text-black border-none text-sm focus:ring-4 focus:ring-yellow-400">
+                <input type="text" id="supermercado" oninput="normalizarInput(this); guardarSesionLocal()" placeholder="Supermercado" class="w-full p-3 rounded-xl text-black border-none text-sm focus:ring-4 focus:ring-yellow-400">
+                <input type="text" id="descripcion" oninput="normalizarInput(this); guardarSesionLocal()" placeholder="Descripción de la compra" class="w-full p-3 rounded-xl text-black border-none text-sm focus:ring-4 focus:ring-yellow-400">
             </div>
         </header>
 
         <main class="p-4 max-w-lg mx-auto">
-            <!-- <section class="bg-white p-5 rounded-[2rem] shadow-sm mb-6 border border-slate-200">
-                <div class="space-y-4">
-                    <input type="text" id="prod_nombre" list="historial_productos" placeholder="Nombre del producto..." class="w-full p-4 bg-slate-100 rounded-2xl text-lg font-bold focus:ring-2 focus:ring-indigo-500" oninput="buscarEnHistorial(this.value)">
-                    <datalist id="historial_productos"></datalist>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="relative">
-                            <label class="text-[10px] font-bold text-slate-400 ml-2">CANTIDAD</label>
-                            <input type="number" id="prod_cantidad" value="1" class="w-full p-4 bg-slate-100 rounded-2xl text-xl font-bold">
-                            <p id="label_cant_anterior" class="text-[10px] text-orange-500 font-bold ml-2 mt-1 hidden"></p>
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-slate-400 ml-2">PESO/TAMAÑO</label>
-                            <input type="text" id="prod_peso" placeholder="Ej: 1 Litro" class="w-full p-4 bg-slate-100 rounded-2xl text-lg">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4 bg-indigo-50 p-4 rounded-2xl">
-                        <input type="number" id="prod_precio" placeholder="Precio Q" class="bg-transparent border-none text-2xl font-black text-indigo-700 w-full focus:ring-0">
-                        <div class="text-right">
-                            <p class="text-[10px] font-bold text-indigo-400 uppercase">Subtotal</p>
-                            <p id="prod_subtotal" class="text-2xl font-black text-indigo-800 leading-none">Q 0.00</p>
-                        </div>
-                    </div>
-
-                    <button id="btn_accion_prod" onclick="agregarALista()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg flex justify-center items-center gap-2 text-lg active:scale-95 transition-all">
-                        <i data-lucide="plus"></i> AGREGAR
-                    </button>
-                </div>
-            </section> -->
             <section class="bg-white p-5 rounded-[2rem] shadow-sm mb-6 border border-slate-200">
                 <div class="space-y-4">
                     <div class="relative">
@@ -188,29 +158,6 @@
             } catch (e) { console.error(e); }
         }
 
-        // function buscarEnHistorial(valor) {
-        //     const dl = document.getElementById('historial_productos');
-        //     const labelCant = document.getElementById('label_cant_anterior');
-        //     dl.innerHTML = "";
-        //     labelCant.classList.add('hidden');
-
-        //     const matches = historialDB.filter(p => p.NOMBRE.toLowerCase().includes(valor.toLowerCase()));
-        //     [...new Set(matches.map(m => m.NOMBRE))].forEach(n => {
-        //         const opt = document.createElement('option');
-        //         opt.value = n;
-        //         dl.appendChild(opt);
-        //     });
-
-        //     // Al encontrar el más reciente (historial ya está invertido)
-        //     const rec = historialDB.find(p => p.NOMBRE.toLowerCase() === valor.toLowerCase());
-        //     if (rec) {
-        //         document.getElementById('prod_peso').value = rec.PESO_O_TAMANO;
-        //         document.getElementById('prod_precio').value = rec.PRECIO;
-        //         labelCant.innerText = `Cant. anterior: ${rec.CANTIDAD}`;
-        //         labelCant.classList.remove('hidden');
-        //         iCant.dispatchEvent(new Event('input'));
-        //     }
-        // }
         /* */
         function buscarEnHistorial(valor) {
             const dl = document.getElementById('historial_productos');
@@ -262,6 +209,7 @@
             }
             render();
             limpiar();
+            guardarSesionLocal(); // <--- AGREGAR ESTO
         }
 
         function editar(id) {
@@ -310,7 +258,12 @@
             lucide.createIcons();
         }
 
-        function eliminar(id) { productosCarrito = productosCarrito.filter(p => p.id !== id); render(); }
+        function eliminar(id) { 
+            productosCarrito = productosCarrito.filter(p => p.id !== id); 
+            render();
+            guardarSesionLocal(); // <--- AGREGAR ESTO 
+        }
+        
         function limpiar() { 
             document.getElementById('prod_nombre').value = ""; 
             iPrecio.value = ""; 
@@ -466,12 +419,49 @@
                 await fetch(SCRIPT_URL, { method: 'POST', body: params });
             }
             alert("¡Éxito!");
-            productosCarrito = []; render();
+            productosCarrito = []; 
+            borrarSesionLocal(); // <--- Limpia la caché porque ya se envió
+            render();
             btn.disabled = false; btn.innerHTML = '<i data-lucide="send"></i> GUARDAR';
             loadData();
         }
 
-        window.onload = loadData;
+        // --- PERSISTENCIA LOCAL ---
+
+        function guardarSesionLocal() {
+            const sesion = {
+                supermercado: document.getElementById('supermercado').value,
+                descripcion: document.getElementById('descripcion').value,
+                carrito: productosCarrito
+            };
+            localStorage.setItem('super_control_cache', JSON.stringify(sesion));
+        }
+
+        function recuperarSesionLocal() {
+            const cache = localStorage.getItem('super_control_cache');
+            if (!cache) return;
+
+            const sesion = JSON.parse(cache);
+            
+            // Restaurar cabecera
+            document.getElementById('supermercado').value = sesion.supermercado || "";
+            document.getElementById('descripcion').value = sesion.descripcion || "";
+            
+            // Restaurar carrito
+            if (sesion.carrito && sesion.carrito.length > 0) {
+                productosCarrito = sesion.carrito;
+                render(); // Dibujar la lista guardada
+            }
+        }
+
+        function borrarSesionLocal() {
+            localStorage.removeItem('super_control_cache');
+        }
+
+        window.onload = () => {
+            loadData();
+            recuperarSesionLocal(); // <--- Recupera lo que quedó pendiente
+        };
     </script>
 </body>
 </html>
