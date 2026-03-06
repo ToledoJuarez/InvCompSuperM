@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Súper Control RT Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+    .input-with-clear { padding-right: 2.5rem; }
+</style>
+</head>
+
+<body class="bg-slate-50 min-h-screen pb-24">
+
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-2 z-50 shadow-2xl">
+        <button onclick="switchView('viewCompra')" class="flex flex-col items-center p-2 text-indigo-600">
+            <i data-lucide="shopping-cart"></i><span class="text-[10px] font-bold">COMPRA</span>
+        </button>
+        <button onclick="switchView('viewDash')" class="flex flex-col items-center p-2 text-slate-400">
+            <i data-lucide="bar-chart-3"></i><span class="text-[10px] font-bold">ANÁLISIS</span>
+        </button>
+    </nav>
+
+    <div id="viewCompra" class="view-section">
+        <header class="bg-indigo-700 text-white p-6 rounded-b-[2rem] shadow-lg">
+            <h1 class="text-xl font-black mb-4">🛒 REGISTRO EN TIEMPO REAL</h1>
+            <div class="space-y-2">
+                <input type="text" id="supermercado" placeholder="Supermercado" class="w-full p-3 rounded-xl text-black border-none text-sm focus:ring-4 focus:ring-yellow-400">
+                <input type="text" id="descripcion" placeholder="Descripción de la compra" class="w-full p-3 rounded-xl text-black border-none text-sm focus:ring-4 focus:ring-yellow-400">
+            </div>
+        </header>
+
+        <main class="p-4 max-w-lg mx-auto">
+            <!-- <section class="bg-white p-5 rounded-[2rem] shadow-sm mb-6 border border-slate-200">
+                <div class="space-y-4">
+                    <input type="text" id="prod_nombre" list="historial_productos" placeholder="Nombre del producto..." class="w-full p-4 bg-slate-100 rounded-2xl text-lg font-bold focus:ring-2 focus:ring-indigo-500" oninput="buscarEnHistorial(this.value)">
+                    <datalist id="historial_productos"></datalist>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="relative">
+                            <label class="text-[10px] font-bold text-slate-400 ml-2">CANTIDAD</label>
+                            <input type="number" id="prod_cantidad" value="1" class="w-full p-4 bg-slate-100 rounded-2xl text-xl font-bold">
+                            <p id="label_cant_anterior" class="text-[10px] text-orange-500 font-bold ml-2 mt-1 hidden"></p>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 ml-2">PESO/TAMAÑO</label>
+                            <input type="text" id="prod_peso" placeholder="Ej: 1 Litro" class="w-full p-4 bg-slate-100 rounded-2xl text-lg">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 bg-indigo-50 p-4 rounded-2xl">
+                        <input type="number" id="prod_precio" placeholder="Precio Q" class="bg-transparent border-none text-2xl font-black text-indigo-700 w-full focus:ring-0">
+                        <div class="text-right">
+                            <p class="text-[10px] font-bold text-indigo-400 uppercase">Subtotal</p>
+                            <p id="prod_subtotal" class="text-2xl font-black text-indigo-800 leading-none">Q 0.00</p>
+                        </div>
+                    </div>
+
+                    <button id="btn_accion_prod" onclick="agregarALista()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg flex justify-center items-center gap-2 text-lg active:scale-95 transition-all">
+                        <i data-lucide="plus"></i> AGREGAR
+                    </button>
+                </div>
+            </section> -->
+            <section class="bg-white p-5 rounded-[2rem] shadow-sm mb-6 border border-slate-200">
+                <div class="space-y-4">
+                    <div class="relative">
+                        <input type="text" id="prod_nombre" list="historial_productos" placeholder="Nombre del producto..." 
+                            class="w-full p-4 pr-12 bg-slate-100 rounded-2xl text-lg font-bold focus:ring-2 focus:ring-indigo-500" 
+                            oninput="buscarEnHistorial(this.value)">
+                        <button onclick="clearInput('prod_nombre')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500 p-2">
+                            <i data-lucide="eraser" class="w-5 h-5"></i>
+                        </button>
+                        <datalist id="historial_productos"></datalist>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="relative">
+                            <label class="text-[10px] font-bold text-slate-400 ml-2">CANTIDAD</label>
+                            <input type="number" id="prod_cantidad" value="1" 
+                                class="w-full p-4 pr-10 bg-slate-100 rounded-2xl text-xl font-bold">
+                            <button onclick="clearInput('prod_cantidad', 1)" class="absolute right-2 top-[34px] text-slate-400 p-2">
+                                <i data-lucide="x-circle" class="w-4 h-4"></i>
+                            </button>
+                            <p id="label_cant_anterior" class="text-[10px] text-orange-500 font-bold ml-2 mt-1 hidden"></p>
+                        </div>
+                        <div class="relative">
+                            <label class="text-[10px] font-bold text-slate-400 ml-2">PESO/TAMAÑO</label>
+                            <input type="text" id="prod_peso" placeholder="Ej: 1 Litro" 
+                                class="w-full p-4 pr-10 bg-slate-100 rounded-2xl text-lg">
+                            <button onclick="clearInput('prod_peso')" class="absolute right-2 top-[34px] text-slate-400 p-2">
+                                <i data-lucide="eraser" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="relative grid grid-cols-2 gap-4 bg-indigo-50 p-4 rounded-2xl items-center">
+                        <div class="relative">
+                            <input type="number" id="prod_precio" placeholder="Precio Q" 
+                                class="bg-transparent border-none text-2xl font-black text-indigo-700 w-full focus:ring-0 p-0 pr-8">
+                            <button onclick="clearInput('prod_precio')" class="absolute right-0 top-1/2 -translate-y-1/2 text-indigo-300 p-1">
+                                <i data-lucide="eraser" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] font-bold text-indigo-400 uppercase">Subtotal</p>
+                            <p id="prod_subtotal" class="text-2xl font-black text-indigo-800 leading-none">Q 0.00</p>
+                        </div>
+                    </div>
+
+                    <button id="btn_accion_prod" onclick="agregarALista()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg flex justify-center items-center gap-2 text-lg active:scale-95 transition-all">
+                        <i data-lucide="plus"></i> AGREGAR
+                    </button>
+                </div>
+            </section>
+            <div id="lista_contenedor" class="space-y-3 pb-20"></div>
+        </main>
+
+        <footer class="fixed bottom-16 left-0 right-0 bg-white/90 backdrop-blur p-4 flex justify-between items-center border-t border-slate-100">
+            <div><p class="text-xs text-slate-400 font-bold">TOTAL</p><p id="total_compra" class="text-2xl font-black text-emerald-600 leading-none">Q 0.00</p></div>
+            <button id="btnGuardar" onclick="enviarAGoogleSheets()" class="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 shadow-xl active:scale-95">
+                <i data-lucide="send" class="text-yellow-400"></i> GUARDAR
+            </button>
+        </footer>
+    </div>
+
+    <div id="viewDash" class="view-section hidden p-4">
+        <h2 class="text-2xl font-black text-slate-800 mb-6">📊 Análisis de Precios</h2>
+        
+        <div class="bg-white p-4 rounded-2xl shadow-sm mb-6">
+            <div class="flex items-center gap-2 mb-3">
+                <input type="text" id="dash_buscar" oninput="filtrarChecks(this.value)" placeholder="Buscar producto para graficar..." class="flex-1 p-2 bg-slate-100 rounded-lg text-sm">
+                <label class="flex items-center gap-1 text-[10px] font-bold">
+                    <input type="checkbox" id="check_todos" onchange="toggleTodos(this.checked)"> TODOS
+                </label>
+            </div>
+            <div id="contenedor_checks" class="h-32 overflow-y-auto border-t pt-2 grid grid-cols-1 gap-1">
+                </div>
+            <button onclick="updateCharts()" class="w-full mt-3 bg-indigo-500 text-white text-xs font-bold py-2 rounded-lg">ACTUALIZAR GRÁFICAS</button>
+        </div>
+
+        <div class="space-y-6">
+            <div class="bg-white p-4 rounded-2xl shadow-sm h-64">
+                <h3 class="text-xs font-bold text-slate-400 mb-2 uppercase">Tendencia Mensual (Alzas/Bajas)</h3>
+                <canvas id="chartLineal"></canvas>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm h-64">
+                <h3 class="text-xs font-bold text-slate-400 mb-2 uppercase">Promedio de Precio por Producto</h3>
+                <canvas id="chartColumnas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        //const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyxVBRfY6FSlpGauswjdWLUsUcB-oo7D7aB_RoRQAwgmAbRVwLmKoDy381kEZwPQ_O5/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzj9DzJvxfdmRhSnTQ_iaZCr9-G9kZXafP06xgnlWJmG1kCqTYzaLHB4Lxq3Q0u_xIs/exec'; 
+        let productosCarrito = [];
+        let historialDB = [];
+        let editandoId = null;
+        let chartL = null, chartC = null;
+
+        lucide.createIcons();
+
+        // --- NAVEGACIÓN ---
+        function switchView(viewId) {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
+            document.getElementById(viewId).classList.remove('hidden');
+            if(viewId === 'viewDash') initDash();
+        }
+
+        // --- CÁLCULO SUBTOTAL ---
+        const iCant = document.getElementById('prod_cantidad');
+        const iPrecio = document.getElementById('prod_precio');
+        [iCant, iPrecio].forEach(inp => inp.addEventListener('input', () => {
+            document.getElementById('prod_subtotal').innerText = `Q ${((iCant.value || 0) * (iPrecio.value || 0)).toFixed(2)}`;
+        }));
+
+        // --- HISTORIAL INVERSO Y CANTIDAD ANTERIOR ---
+        async function loadData() {
+            try {
+                const resp = await fetch(`${SCRIPT_URL}?accion=obtenerDatos`);
+                const result = await resp.json(); //[cite: 16]
+                if (result.success) {
+                    // Invertimos para que lo más reciente esté al inicio //[cite: 15]
+                    historialDB = result.datos.reverse(); 
+                    poblarChecks();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function buscarEnHistorial(valor) {
+            const dl = document.getElementById('historial_productos');
+            const labelCant = document.getElementById('label_cant_anterior');
+            dl.innerHTML = "";
+            labelCant.classList.add('hidden');
+
+            const matches = historialDB.filter(p => p.NOMBRE.toLowerCase().includes(valor.toLowerCase()));
+            [...new Set(matches.map(m => m.NOMBRE))].forEach(n => {
+                const opt = document.createElement('option');
+                opt.value = n;
+                dl.appendChild(opt);
+            });
+
+            // Al encontrar el más reciente (historial ya está invertido)
+            const rec = historialDB.find(p => p.NOMBRE.toLowerCase() === valor.toLowerCase());
+            if (rec) {
+                document.getElementById('prod_peso').value = rec.PESO_O_TAMANO;
+                document.getElementById('prod_precio').value = rec.PRECIO;
+                labelCant.innerText = `Cant. anterior: ${rec.CANTIDAD}`;
+                labelCant.classList.remove('hidden');
+                iCant.dispatchEvent(new Event('input'));
+            }
+        }
+
+        // --- GESTIÓN DE LISTA (EDITAR/ELIMINAR) ---
+        function agregarALista() {
+            const data = {
+                id: editandoId || Date.now(),
+                nombre: document.getElementById('prod_nombre').value,
+                cantidad: parseFloat(iCant.value),
+                peso: document.getElementById('prod_peso').value,
+                precio: parseFloat(iPrecio.value),
+                subtotal: iCant.value * iPrecio.value
+            };
+
+            if(editandoId) {
+                productosCarrito = productosCarrito.map(p => p.id === editandoId ? data : p);
+                resetForm();
+            } else {
+                productosCarrito.unshift(data);
+            }
+            render();
+            limpiar();
+        }
+
+        function editar(id) {
+            const p = productosCarrito.find(x => x.id === id);
+            editandoId = id;
+            document.getElementById('prod_nombre').value = p.nombre;
+            iCant.value = p.cantidad;
+            document.getElementById('prod_peso').value = p.peso;
+            iPrecio.value = p.precio;
+            iCant.dispatchEvent(new Event('input'));
+            
+            const btn = document.getElementById('btn_accion_prod');
+            btn.innerHTML = '<i data-lucide="check"></i> ACTUALIZAR';
+            btn.classList.replace('bg-indigo-600', 'bg-orange-500');
+            lucide.createIcons();
+        }
+
+        function resetForm() {
+            editandoId = null;
+            const btn = document.getElementById('btn_accion_prod');
+            btn.innerHTML = '<i data-lucide="plus"></i> AGREGAR';
+            btn.classList.replace('bg-orange-500', 'bg-indigo-600');
+            lucide.createIcons();
+        }
+
+        function render() {
+            const cont = document.getElementById('lista_contenedor');
+            cont.innerHTML = "";
+            let t = 0;
+            productosCarrito.forEach(p => {
+                t += p.subtotal;
+                cont.innerHTML += `
+                    <div class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm border border-slate-100">
+                        <div class="flex-1">
+                            <p class="font-black text-sm">${p.nombre}</p>
+                            <p class="text-[10px] text-slate-400 font-bold">${p.cantidad} x Q${p.precio} | ${p.peso}</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <p class="font-black text-indigo-600 text-sm">Q${p.subtotal.toFixed(2)}</p>
+                            <button onclick="editar(${p.id})" class="text-blue-400"><i data-lucide="edit-3" class="w-4"></i></button>
+                            <button onclick="eliminar(${p.id})" class="text-red-400"><i data-lucide="trash-2" class="w-4"></i></button>
+                        </div>
+                    </div>`;
+            });
+            document.getElementById('total_compra').innerText = `Q ${t.toFixed(2)}`;
+            lucide.createIcons();
+        }
+
+        function eliminar(id) { productosCarrito = productosCarrito.filter(p => p.id !== id); render(); }
+        function limpiar() { 
+            document.getElementById('prod_nombre').value = ""; 
+            iPrecio.value = ""; 
+            iCant.value = 1; 
+            document.getElementById('prod_peso').value = "";
+            document.getElementById('prod_subtotal').innerText = "Q 0.00";
+        }
+
+        // --- DASHBOARDS Y GRÁFICAS ---
+        // --- DASHBOARDS Y GRÁFICAS CORREGIDAS ---
+
+        function initDash() {
+            if (historialDB.length === 0) return;
+            poblarChecks();
+            // No llamamos a updateCharts automáticamente para no saturar si hay muchos datos
+        }
+
+        function updateCharts() {
+            const seleccionados = Array.from(document.querySelectorAll('.prod-check:checked')).map(i => i.value);
+            if (seleccionados.length === 0) return alert("Selecciona al menos un producto");
+
+            // 1. Gráfica Lineal: Evolución de PRECIO por FECHA
+            // Extraemos todas las fechas únicas y las ordenamos cronológicamente
+            const todasLasFechas = [...new Set(historialDB.map(p => p.FECHA))].sort((a, b) => new Date(a) - new Date(b));
+
+            const datasetsLineal = seleccionados.map(prodNombre => {
+                // Buscamos los registros de este producto específico
+                const registrosProducto = historialDB.filter(p => p.NOMBRE === prodNombre);
+                
+                // Mapeamos el precio a cada fecha (si no hubo compra ese día, queda null)
+                const dataPuntos = todasLasFechas.map(fecha => {
+                    const compra = registrosProducto.find(r => r.FECHA === fecha);
+                    return compra ? parseFloat(compra.PRECIO) : null;
+                });
+
+                return {
+                    label: prodNombre,
+                    data: dataPuntos,
+                    borderColor: '#' + Math.floor(Math.random()*16777215).toString(16), // Color aleatorio
+                    tension: 0.3, // Curvatura de la línea
+                    spanGaps: true, // Une los puntos aunque falten fechas intermedias
+                    borderWidth: 3,
+                    pointRadius: 5
+                };
+            });
+
+            if (chartL) chartL.destroy();
+            chartL = new Chart(document.getElementById('chartLineal'), {
+                type: 'line',
+                data: { labels: todasLasFechas, datasets: datasetsLineal },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: { title: { display: true, text: 'Tendencia de Precios Unitarios' } }
+                }
+            });
+
+            // 2. Gráfica de Columnas: PROMEDIO de Precio Unitario
+            const promediosPrecios = seleccionados.map(prodNombre => {
+                const compras = historialDB.filter(p => p.NOMBRE === prodNombre);
+                const suma = compras.reduce((acc, curr) => acc + parseFloat(curr.PRECIO || 0), 0);
+                return (suma / compras.length).toFixed(2);
+            });
+
+            if (chartC) chartC.destroy();
+            chartC = new Chart(document.getElementById('chartColumnas'), {
+                type: 'bar',
+                data: { 
+                    labels: seleccionados, 
+                    datasets: [{ 
+                        label: 'Precio Promedio (Q)', 
+                        data: promediosPrecios, 
+                        backgroundColor: 'rgba(79, 70, 229, 0.7)',
+                        borderRadius: 8
+                    }] 
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+        
+        function poblarChecks() {
+            const unicos = [...new Set(historialDB.map(p => p.NOMBRE))];
+            const cont = document.getElementById('contenedor_checks');
+            cont.innerHTML = unicos.map(n => `
+                <label class="item-check flex items-center gap-2 text-xs p-1 hover:bg-slate-50">
+                    <input type="checkbox" value="${n}" class="prod-check"> ${n}
+                </label>
+            `).join('');
+        }
+
+        function filtrarChecks(v) {
+            document.querySelectorAll('.item-check').forEach(l => {
+                l.classList.toggle('hidden', !l.innerText.toLowerCase().includes(v.toLowerCase()));
+            });
+        }
+
+        function toggleTodos(c) { document.querySelectorAll('.prod-check').forEach(i => i.checked = c); }
+        
+        /* */
+        function clearInput(id, defaultValue = "") {
+            const input = document.getElementById(id);
+            input.value = defaultValue;
+            
+            // Disparamos el evento para que la lógica de consulta y subtotales se actualice
+            input.dispatchEvent(new Event('input'));
+            
+            // Limpieza específica de etiquetas visuales de consulta
+            if(id === 'prod_nombre') {
+                document.getElementById('label_cant_anterior').classList.add('hidden');
+                document.getElementById('historial_productos').innerHTML = "";
+            }
+            
+            input.focus(); // Mantiene el teclado abierto en móviles
+            lucide.createIcons(); // Refresca iconos si es necesario
+        }
+
+        async function enviarAGoogleSheets() {
+            const btn = document.getElementById('btnGuardar');
+            btn.disabled = true;
+            btn.innerText = "ENVIANDO...";
+            
+            const m = new Date().toLocaleString('es-GT', {month: 'long'}).toUpperCase();
+            const f = new Date().toISOString().split('T')[0];
+
+            for (let p of productosCarrito) {
+                const params = new URLSearchParams();
+                params.append('FECHA', f); params.append('MES', m);
+                params.append('DESCRIPCION', document.getElementById('descripcion').value);
+                params.append('SUPERMERCADO', document.getElementById('supermercado').value);
+                params.append('CANTIDAD', p.cantidad); params.append('NOMBRE', p.nombre);
+                params.append('PESO_O_TAMANO', p.peso); params.append('PRECIO', p.precio);
+                params.append('SUBTOTAL', p.subtotal);
+
+                await fetch(SCRIPT_URL, { method: 'POST', body: params });
+            }
+            alert("¡Éxito!");
+            productosCarrito = []; render();
+            btn.disabled = false; btn.innerHTML = '<i data-lucide="send"></i> GUARDAR';
+            loadData();
+        }
+
+        window.onload = loadData;
+    </script>
+</body>
+</html>
