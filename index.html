@@ -2,33 +2,67 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Súper Control RT Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-    .input-with-clear { padding-right: 2.5rem; }
-</style>
+		/* Margen extra inferior para que el contenido no quede detrás de la nav-bar */
+        .view-section { padding-bottom: 140px; } 
+        .modal-overlay { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        
+        /* Efecto de difuminado para la barra de navegación */
+        .nav-blur {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+    </style>
 </head>
 
-<body class="bg-slate-50 min-h-screen pb-24">
-
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-2 z-50 shadow-2xl">
-        <button onclick="switchView('viewCompra')" class="flex flex-col items-center p-2 text-indigo-600">
-            <i data-lucide="shopping-cart"></i><span class="text-[10px] font-bold">COMPRA</span>
+<body class="bg-slate-50 min-h-screen">
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-3 z-50 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] pb-6">
+        <button onclick="switchView('viewCaratulas')" class="nav-btn flex flex-col items-center text-indigo-600" id="btn-nav-compras">
+            <i data-lucide="layout-list"></i><span class="text-[10px] font-bold">COMPRAS</span>
         </button>
-        <button onclick="switchView('viewDash')" class="flex flex-col items-center p-2 text-slate-400">
+        <button onclick="switchView('viewHistorial')" class="nav-btn flex flex-col items-center text-slate-400" id="btn-nav-historial">
+            <i data-lucide="history"></i><span class="text-[10px] font-bold">HISTORIAL</span>
+        </button>
+        <button onclick="switchView('viewDash')" class="nav-btn flex flex-col items-center text-slate-400" id="btn-nav-dash">
             <i data-lucide="bar-chart-3"></i><span class="text-[10px] font-bold">ANÁLISIS</span>
         </button>
     </nav>
 
-    <div id="viewCompra" class="view-section">
+    <div id="viewCaratulas" class="view-section">
         <header class="bg-indigo-700 text-white p-6 rounded-b-[2rem] shadow-lg">
-            <h1 class="text-xl font-black mb-4">🛒 REGISTRO EN TIEMPO REAL</h1>
-            <div class="space-y-2">
-                <input type="text" id="supermercado" oninput="normalizarInput(this); guardarSesionLocal()" placeholder="Supermercado" class="w-full p-3 rounded-xl text-black border-none text-sm focus:ring-4 focus:ring-yellow-400">
-                <input type="text" id="descripcion" oninput="normalizarInput(this); guardarSesionLocal()" placeholder="Descripción de la compra" class="w-full p-3 rounded-xl text-black border-none text-sm focus:ring-4 focus:ring-yellow-400">
+            <h1 class="text-xl font-black mb-2">📋 MIS COMPRAS</h1>
+            <p class="text-xs text-indigo-200">Gestiona múltiples listas de supermercado</p>
+        </header>
+
+        <main class="p-4">
+            <button onclick="abrirModalCaratula()" class="w-full bg-emerald-500 text-white font-black py-4 rounded-2xl shadow-lg flex justify-center items-center gap-2 mb-6 active:scale-95 transition-all">
+                <i data-lucide="plus-circle"></i> CREAR CARÁTULA DE COMPRA
+            </button>
+
+            <div class="mb-4">
+                <input type="text" id="searchCaratulas" oninput="renderCaratulas()" placeholder="Buscar supermercado..." class="w-full p-3 rounded-xl border border-slate-200 text-sm">
+            </div>
+
+            <div id="lista_caratulas" class="space-y-4">
+                </div>
+        </main>
+    </div>
+
+    <div id="viewCompra" class="view-section hidden">
+        <header class="bg-indigo-700 text-white p-6 rounded-b-[2rem] shadow-lg sticky top-0 z-40">
+            <div class="flex items-center gap-3">
+                <button onclick="switchView('viewCaratulas')" class="p-2 bg-indigo-600 rounded-lg"><i data-lucide="chevron-left"></i></button>
+                <div>
+                    <h1 id="header_supermercado" class="text-lg font-black leading-none"></h1>
+                    <p id="header_descripcion" class="text-xs text-indigo-200"></p>
+                </div>
             </div>
         </header>
 
@@ -36,323 +70,478 @@
             <section class="bg-white p-5 rounded-[2rem] shadow-sm mb-6 border border-slate-200">
                 <div class="space-y-4">
                     <div class="relative">
-                        <input type="text" id="prod_nombre" list="historial_productos" oninput="normalizarInput(this); buscarEnHistorial(this.value)" placeholder="Nombre del producto..." 
-                            class="w-full p-4 pr-12 bg-slate-100 rounded-2xl text-lg font-bold focus:ring-2 focus:ring-indigo-500" >
-                        <button onclick="clearInput('prod_nombre')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500 p-2">
-                            <i data-lucide="eraser" class="w-5 h-5"></i>
-                        </button>
+                        <input type="text" id="prod_nombre" list="historial_productos" oninput="normalizarInput(this); buscarEnHistorial(this.value)" placeholder="Nombre del producto..." class="w-full p-4 bg-slate-100 rounded-2xl text-lg font-bold">
                         <datalist id="historial_productos"></datalist>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
-                        <div class="relative">
+                        <div>
                             <label class="text-[10px] font-bold text-slate-400 ml-2">CANTIDAD</label>
-                            <input type="number" id="prod_cantidad" value="1" 
-                                class="w-full p-4 pr-10 bg-slate-100 rounded-2xl text-xl font-bold">
-                            <button onclick="clearInput('prod_cantidad', 1)" class="absolute right-2 top-[34px] text-slate-400 p-2">
-                                <i data-lucide="x-circle" class="w-4 h-4"></i>
-                            </button>
-                            <p id="label_cant_anterior" class="text-[10px] text-orange-500 font-bold ml-2 mt-1 hidden"></p>
+                            <input type="number" id="prod_cantidad" value="1" class="w-full p-4 bg-slate-100 rounded-2xl text-xl font-bold">
                         </div>
-                        <div class="relative">
+                        <div>
                             <label class="text-[10px] font-bold text-slate-400 ml-2">PESO/TAMAÑO</label>
-                            <input type="text" id="prod_peso" oninput="normalizarInput(this)" placeholder="Ej: 1 Litro" 
-                                class="w-full p-4 pr-10 bg-slate-100 rounded-2xl text-lg">
-                            <button onclick="clearInput('prod_peso')" class="absolute right-2 top-[34px] text-slate-400 p-2">
-                                <i data-lucide="eraser" class="w-4 h-4"></i>
-                            </button>
+                            <input type="text" id="prod_peso" oninput="normalizarInput(this)" placeholder="Ej: 1 Litro" class="w-full p-4 bg-slate-100 rounded-2xl text-lg">
                         </div>
                     </div>
 
-                    <div class="relative grid grid-cols-2 gap-4 bg-indigo-50 p-4 rounded-2xl items-center">
-                        <div class="relative">
-                            <input type="number" id="prod_precio" placeholder="Precio Q" 
-                                class="bg-transparent border-none text-2xl font-black text-indigo-700 w-full focus:ring-0 p-0 pr-8">
-                            <button onclick="clearInput('prod_precio')" class="absolute right-0 top-1/2 -translate-y-1/2 text-indigo-300 p-1">
-                                <i data-lucide="eraser" class="w-5 h-5"></i>
-                            </button>
-                        </div>
+                    <div class="grid grid-cols-2 gap-4 bg-indigo-50 p-4 rounded-2xl items-center">
+                        <input type="number" id="prod_precio" placeholder="Precio Q" class="bg-transparent border-none text-2xl font-black text-indigo-700 w-full focus:ring-0">
                         <div class="text-right">
                             <p class="text-[10px] font-bold text-indigo-400 uppercase">Subtotal</p>
                             <p id="prod_subtotal" class="text-2xl font-black text-indigo-800 leading-none">Q 0.00</p>
                         </div>
                     </div>
 
-                    <button id="btn_accion_prod" onclick="agregarALista()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg flex justify-center items-center gap-2 text-lg active:scale-95 transition-all">
+                    <button id="btn_accion_prod" onclick="agregarALista()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg flex justify-center items-center gap-2">
                         <i data-lucide="plus"></i> AGREGAR
                     </button>
                 </div>
             </section>
-            <div id="lista_contenedor" class="space-y-3 pb-20"></div>
+
+            <div class="mb-4">
+                <input type="text" id="searchProductosActuales" oninput="renderProductos()" placeholder="Filtrar productos en esta lista..." class="w-full p-3 rounded-xl border-none shadow-inner bg-white text-sm">
+            </div>
+
+            <div id="lista_contenedor" class="space-y-3"></div>
         </main>
 
-        <footer class="fixed bottom-16 left-0 right-0 bg-white/90 backdrop-blur p-4 flex justify-between items-center border-t border-slate-100">
-            <div><p class="text-xs text-slate-400 font-bold">TOTAL</p><p id="total_compra" class="text-2xl font-black text-emerald-600 leading-none">Q 0.00</p></div>
-            <button id="btnGuardar" onclick="enviarAGoogleSheets()" class="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 shadow-xl active:scale-95">
-                <i data-lucide="send" class="text-yellow-400"></i> GUARDAR
-            </button>
+        <footer class="fixed bottom-20 left-4 right-4 z-40">
+            <div class="bg-slate-900 text-white p-4 rounded-3xl flex justify-between items-center shadow-2xl">
+                <div><p class="text-[10px] text-slate-400 font-bold uppercase">Total Actual</p><p id="total_compra" class="text-xl font-black text-yellow-400">Q 0.00</p></div>
+            </div>
         </footer>
+    </div>
+
+    <div id="viewHistorial" class="view-section hidden p-4">
+        <h2 class="text-2xl font-black text-slate-800 mb-4 flex items-center gap-2">
+            <i data-lucide="search" class="text-indigo-600"></i> Consultar Datos
+        </h2>
+        
+        <div class="space-y-4 mb-6">
+            <input type="text" id="hist_search_general" oninput="filtrarHistorial()" placeholder="Buscar producto, súper o fecha..." class="w-full p-4 rounded-2xl border-none shadow-sm bg-white">
+        </div>
+
+        <div id="cont_historial_agrupado" class="space-y-4">
+            </div>
     </div>
 
     <div id="viewDash" class="view-section hidden p-4">
         <h2 class="text-2xl font-black text-slate-800 mb-6">📊 Análisis de Precios</h2>
-        
         <div class="bg-white p-4 rounded-2xl shadow-sm mb-6">
-            <div class="flex items-center gap-2 mb-3">
-                <input type="text" id="dash_buscar" oninput="filtrarChecks(this.value)" placeholder="Buscar producto para graficar..." class="flex-1 p-2 bg-slate-100 rounded-lg text-sm">
-                <label class="flex items-center gap-1 text-[10px] font-bold">
-                    <input type="checkbox" id="check_todos" onchange="toggleTodos(this.checked)"> TODOS
-                </label>
-            </div>
-            <div id="contenedor_checks" class="h-32 overflow-y-auto border-t pt-2 grid grid-cols-1 gap-1">
-                </div>
-            <button onclick="updateCharts()" class="w-full mt-3 bg-indigo-500 text-white text-xs font-bold py-2 rounded-lg">ACTUALIZAR GRÁFICAS</button>
+            <input type="text" id="dash_buscar" oninput="filtrarChecks(this.value)" placeholder="Filtrar productos..." class="w-full p-2 bg-slate-100 rounded-lg text-sm mb-3">
+            <div id="contenedor_checks" class="h-32 overflow-y-auto border-t pt-2 grid grid-cols-1 gap-1 hide-scroll"></div>
+            <button onclick="updateCharts()" class="w-full mt-3 bg-indigo-500 text-white font-bold py-3 rounded-xl">GENERAR ANÁLISIS</button>
         </div>
-
         <div class="space-y-6">
-            <div class="bg-white p-4 rounded-2xl shadow-sm h-64">
-                <h3 class="text-xs font-bold text-slate-400 mb-2 uppercase">Tendencia Mensual (Alzas/Bajas)</h3>
-                <canvas id="chartLineal"></canvas>
+            <div class="bg-white p-4 rounded-2xl shadow-sm h-64"><canvas id="chartLineal"></canvas></div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm h-64"><canvas id="chartColumnas"></canvas></div>
+        </div>
+    </div>
+
+    <div id="modalCaratula" class="fixed inset-0 z-[100] modal-overlay hidden flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
+            <h3 id="modal_titulo" class="text-xl font-black mb-4">Nueva Carátula</h3>
+            <div class="space-y-4">
+                <input type="text" id="modal_super" oninput="normalizarInput(this)" placeholder="Nombre del Súper" class="w-full p-4 bg-slate-100 rounded-2xl font-bold">
+                <input type="text" id="modal_desc" oninput="normalizarInput(this)" placeholder="Descripción corta" class="w-full p-4 bg-slate-100 rounded-2xl">
+                <div class="flex gap-3 pt-4">
+                    <button onclick="cerrarModal()" class="flex-1 py-4 font-bold text-slate-400">CANCELAR</button>
+                    <button id="btn_guardar_caratula" onclick="guardarCaratula()" class="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-black">CREAR</button>
+                </div>
             </div>
-            <div class="bg-white p-4 rounded-2xl shadow-sm h-64">
-                <h3 class="text-xs font-bold text-slate-400 mb-2 uppercase">Promedio de Precio por Producto</h3>
-                <canvas id="chartColumnas"></canvas>
+        </div>
+    </div>
+
+    <div id="modalConfirmar" class="fixed inset-0 z-[200] modal-overlay hidden flex items-end sm:items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center shadow-2xl mb-20 sm:mb-0">
+            <div id="confirm_icon" class="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4"></div>
+            <h3 id="confirm_titulo" class="text-xl font-black mb-2"></h3>
+            <p id="confirm_msj" class="text-slate-500 mb-8"></p>
+            <div class="flex flex-col gap-3">
+                <button id="confirm_btn_si" class="w-full py-4 rounded-2xl font-black text-white shadow-lg"></button>
+                <button onclick="cerrarConfirm()" class="w-full py-4 font-bold text-slate-400">CANCELAR</button>
             </div>
         </div>
     </div>
 
     <script>
-        //const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyxVBRfY6FSlpGauswjdWLUsUcB-oo7D7aB_RoRQAwgmAbRVwLmKoDy381kEZwPQ_O5/exec';
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzj9DzJvxfdmRhSnTQ_iaZCr9-G9kZXafP06xgnlWJmG1kCqTYzaLHB4Lxq3Q0u_xIs/exec'; 
-        let productosCarrito = [];
+        let caratulasActivas = [];
+        let idCaratulaActual = null;
         let historialDB = [];
         let editandoId = null;
+        let editandoCaratulaId = null;
         let chartL = null, chartC = null;
 
         lucide.createIcons();
 
-        // --- NAVEGACIÓN ---
+        // --- SISTEMA DE NAVEGACIÓN ---
         function switchView(viewId) {
             document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.replace('text-indigo-600', 'text-slate-400'));
+            
             document.getElementById(viewId).classList.remove('hidden');
+            
+            const map = { 'viewCaratulas': 'btn-nav-compras', 'viewHistorial': 'btn-nav-historial', 'viewDash': 'btn-nav-dash' };
+            if(map[viewId]) document.getElementById(map[viewId]).classList.replace('text-slate-400', 'text-indigo-600');
+            
             if(viewId === 'viewDash') initDash();
+            if(viewId === 'viewHistorial') loadData();
         }
 
-        // --- CÁLCULO SUBTOTAL ---
-        const iCant = document.getElementById('prod_cantidad');
-        const iPrecio = document.getElementById('prod_precio');
-        [iCant, iPrecio].forEach(inp => inp.addEventListener('input', () => {
-            document.getElementById('prod_subtotal').innerText = `Q ${((iCant.value || 0) * (iPrecio.value || 0)).toFixed(2)}`;
-        }));
-
-        // --- HISTORIAL INVERSO Y CANTIDAD ANTERIOR ---
-        async function loadData() {
-            try {
-                const resp = await fetch(`${SCRIPT_URL}?accion=obtenerDatos`);
-                const result = await resp.json(); //[cite: 16]
-                if (result.success) {
-                    // Invertimos para que lo más reciente esté al inicio //[cite: 15]
-                    historialDB = result.datos.reverse(); 
-                    poblarChecks();
-                }
-            } catch (e) { console.error(e); }
-        }
-
-        /* */
-        function buscarEnHistorial(valor) {
-            const dl = document.getElementById('historial_productos');
-            const labelCant = document.getElementById('label_cant_anterior');
-            dl.innerHTML = "";
-            
-            if (!valor) {
-                labelCant.classList.add('hidden');
-                return;
-            }
-
-            // Buscamos coincidencias (ambos ya en mayúsculas y sin tildes por la normalización)
-            const matches = historialDB.filter(p => p.NOMBRE.includes(valor));
-            
-            [...new Set(matches.map(m => m.NOMBRE))].forEach(n => {
-                const opt = document.createElement('option');
-                opt.value = n;
-                dl.appendChild(opt);
-            });
-
-            const rec = historialDB.find(p => p.NOMBRE === valor);
-            if (rec) {
-                document.getElementById('prod_peso').value = rec.PESO_O_TAMANO;
-                document.getElementById('prod_precio').value = rec.PRECIO;
-                labelCant.innerText = `Cant. anterior: ${rec.CANTIDAD}`;
-                labelCant.classList.remove('hidden');
-                iCant.dispatchEvent(new Event('input')); // Actualiza subtotal
+        // --- GESTIÓN DE CARÁTULAS ---
+        function abrirModalCaratula(id = null) {
+            editandoCaratulaId = id;
+            if(id) {
+                const c = caratulasActivas.find(x => x.id === id);
+                document.getElementById('modal_super').value = c.supermercado;
+                document.getElementById('modal_desc').value = c.descripcion;
+                document.getElementById('modal_titulo').innerText = "Editar Carátula";
+                document.getElementById('btn_guardar_caratula').innerText = "ACTUALIZAR";
             } else {
-                labelCant.classList.add('hidden');
+                document.getElementById('modal_super').value = "";
+                document.getElementById('modal_desc').value = "";
+                document.getElementById('modal_titulo').innerText = "Nueva Carátula";
+                document.getElementById('btn_guardar_caratula').innerText = "CREAR";
             }
+            document.getElementById('modalCaratula').classList.remove('hidden');
         }
 
-        // --- GESTIÓN DE LISTA (EDITAR/ELIMINAR) ---
+        function cerrarModal() { document.getElementById('modalCaratula').classList.add('hidden'); }
+
+        function guardarCaratula() {
+            const s = document.getElementById('modal_super').value;
+            const d = document.getElementById('modal_desc').value;
+            if(!s) return alert("Escribe el nombre del súper");
+
+            if(editandoCaratulaId) {
+                caratulasActivas = caratulasActivas.map(c => c.id === editandoCaratulaId ? {...c, supermercado: s, descripcion: d} : c);
+            } else {
+                caratulasActivas.push({ id: Date.now(), supermercado: s, descripcion: d, productos: [] });
+            }
+            
+            saveLocalStorage();
+            renderCaratulas();
+            cerrarModal();
+        }
+
+        function entrarACompra(id) {
+            idCaratulaActual = id;
+            const c = caratulasActivas.find(x => x.id === id);
+            document.getElementById('header_supermercado').innerText = c.supermercado;
+            document.getElementById('header_descripcion').innerText = c.descripcion || "Sin descripción";
+            renderProductos();
+            switchView('viewCompra');
+        }
+
+        // --- GESTIÓN DE PRODUCTOS ---
         function agregarALista() {
+            const pNombre = document.getElementById('prod_nombre').value;
+            const pPrecio = parseFloat(document.getElementById('prod_precio').value);
+            if(!pNombre || isNaN(pPrecio)) return alert("Nombre y Precio son obligatorios");
+
+            const caratula = caratulasActivas.find(c => c.id === idCaratulaActual);
             const data = {
                 id: editandoId || Date.now(),
-                nombre: document.getElementById('prod_nombre').value,
-                cantidad: parseFloat(iCant.value),
+                nombre: pNombre,
+                cantidad: parseFloat(document.getElementById('prod_cantidad').value) || 1,
                 peso: document.getElementById('prod_peso').value,
-                precio: parseFloat(iPrecio.value),
-                subtotal: iCant.value * iPrecio.value
+                precio: pPrecio,
+                subtotal: (parseFloat(document.getElementById('prod_cantidad').value) || 1) * pPrecio
             };
 
             if(editandoId) {
-                productosCarrito = productosCarrito.map(p => p.id === editandoId ? data : p);
-                resetForm();
+                caratula.productos = caratula.productos.map(p => p.id === editandoId ? data : p);
+                resetProdForm();
             } else {
-                productosCarrito.unshift(data);
+                caratula.productos.unshift(data);
             }
-            render();
-            limpiar();
-            guardarSesionLocal(); // <--- AGREGAR ESTO
+
+            saveLocalStorage();
+            renderProductos();
+            limpiarProdForm();
         }
 
-        function editar(id) {
-            const p = productosCarrito.find(x => x.id === id);
-            editandoId = id;
-            document.getElementById('prod_nombre').value = p.nombre;
-            iCant.value = p.cantidad;
-            document.getElementById('prod_peso').value = p.peso;
-            iPrecio.value = p.precio;
-            iCant.dispatchEvent(new Event('input'));
-            
-            const btn = document.getElementById('btn_accion_prod');
-            btn.innerHTML = '<i data-lucide="check"></i> ACTUALIZAR';
-            btn.classList.replace('bg-indigo-600', 'bg-orange-500');
+        // --- RENDERIZADO ---
+        // Pequeño ajuste en renderCaratulas para consistencia visual
+        function renderCaratulas() {
+            const query = document.getElementById('searchCaratulas').value.toLowerCase();
+            const cont = document.getElementById('lista_caratulas');
+            cont.innerHTML = "";
+
+            caratulasActivas.filter(c => c.supermercado.toLowerCase().includes(query)).forEach(c => {
+                const total = c.productos.reduce((acc, p) => acc + p.subtotal, 0);
+                cont.innerHTML += `
+                    <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
+                        <div onclick="entrarACompra(${c.id})" class="p-6 active:bg-slate-50 transition-colors">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-black text-indigo-900 text-lg uppercase tracking-tighter">${c.supermercado}</h3>
+                                <span class="bg-indigo-100 text-indigo-700 text-[10px] font-black px-3 py-1 rounded-full">${c.productos.length} PRODS</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mb-4">${c.descripcion || 'Sin descripción'}</p>
+                            <p class="text-2xl font-black text-emerald-600">Q ${total.toFixed(2)}</p>
+                        </div>
+                        <div class="bg-slate-50 p-4 flex flex-col gap-3 border-t border-slate-100">
+                            <button onclick="confirmarEnvio()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black flex justify-center items-center gap-2 shadow-md active:scale-95 transition-all">
+                                <i data-lucide="send" class="w-4"></i> GUARDAR EN LA NUBE
+                            </button>
+                            <div class="flex gap-2">
+                                <button onclick="abrirModalCaratula(${c.id})" class="flex-1 flex justify-center py-2 text-blue-500 font-bold text-xs uppercase"><i data-lucide="edit" class="w-4 mr-1"></i> Editar</button>
+                                <button onclick="pedirConfirmacion('eliminarCaratula', ${c.id})" class="flex-1 flex justify-center py-2 text-red-500 font-bold text-xs uppercase"><i data-lucide="trash-2" class="w-4 mr-1"></i> Borrar</button>
+                            </div>
+                        </div>
+                    </div>`;
+            });
             lucide.createIcons();
         }
 
-        function resetForm() {
-            editandoId = null;
-            const btn = document.getElementById('btn_accion_prod');
-            btn.innerHTML = '<i data-lucide="plus"></i> AGREGAR';
-            btn.classList.replace('bg-orange-500', 'bg-indigo-600');
-            lucide.createIcons();
-        }
-
-        function render() {
+        function renderProductos() {
+            const query = document.getElementById('searchProductosActuales').value.toLowerCase();
+            const caratula = caratulasActivas.find(c => c.id === idCaratulaActual);
             const cont = document.getElementById('lista_contenedor');
             cont.innerHTML = "";
             let t = 0;
-            productosCarrito.forEach(p => {
-                t += p.subtotal;
-                cont.innerHTML += `
-                    <div class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm border border-slate-100">
-                        <div class="flex-1">
-                            <p class="font-black text-sm">${p.nombre}</p>
-                            <p class="text-[10px] text-slate-400 font-bold">${p.cantidad} x Q${p.precio} | ${p.peso}</p>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <p class="font-black text-indigo-600 text-sm">Q${p.subtotal.toFixed(2)}</p>
-                            <button onclick="editar(${p.id})" class="text-blue-400"><i data-lucide="edit-3" class="w-4"></i></button>
-                            <button onclick="eliminar(${p.id})" class="text-red-400"><i data-lucide="trash-2" class="w-4"></i></button>
-                        </div>
-                    </div>`;
+
+            caratula.productos.forEach(p => {
+                if(p.nombre.toLowerCase().includes(query)) {
+                    t += p.subtotal;
+                    cont.innerHTML += `
+                        <div class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm border border-slate-100">
+                            <div class="flex-1">
+                                <p class="font-black text-sm">${p.nombre}</p>
+                                <p class="text-[10px] text-slate-400 font-bold uppercase">${p.cantidad} x Q${p.precio} | ${p.peso}</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <p class="font-black text-indigo-600 text-sm">Q${p.subtotal.toFixed(2)}</p>
+                                <button onclick="editarProducto(${p.id})" class="text-blue-400 p-2"><i data-lucide="edit-3" class="w-4"></i></button>
+                                <button onclick="pedirConfirmacion('eliminarProducto', ${p.id})" class="text-red-400 p-2"><i data-lucide="trash-2" class="w-4"></i></button>
+                            </div>
+						</div><br><br>`;
+                }
             });
             document.getElementById('total_compra').innerText = `Q ${t.toFixed(2)}`;
             lucide.createIcons();
         }
 
-        function eliminar(id) { 
-            productosCarrito = productosCarrito.filter(p => p.id !== id); 
-            render();
-            guardarSesionLocal(); // <--- AGREGAR ESTO 
+        // --- SISTEMA DE CONFIRMACIÓN ---
+        let accionPendiente = null;
+        let idPendiente = null;
+
+        function pedirConfirmacion(accion, id) {
+            accionPendiente = accion;
+            idPendiente = id;
+            const modal = document.getElementById('modalConfirmar');
+            const icon = document.getElementById('confirm_icon');
+            const titulo = document.getElementById('confirm_titulo');
+            const msj = document.getElementById('confirm_msj');
+            const btn = document.getElementById('confirm_btn_si');
+
+            if(accion === 'eliminarCaratula') {
+                icon.className = "mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-red-100 text-red-600";
+                icon.innerHTML = '<i data-lucide="alert-triangle"></i>';
+                titulo.innerText = "¿Eliminar Compra?";
+                msj.innerText = "Se perderán todos los productos agregados a esta carátula.";
+                btn.className = "w-full py-4 rounded-2xl font-black text-white shadow-lg bg-red-500";
+                btn.innerText = "SÍ, ELIMINAR";
+                btn.onclick = () => { caratulasActivas = caratulasActivas.filter(c => c.id !== id); saveLocalStorage(); renderCaratulas(); cerrarConfirm(); };
+            } else if(accion === 'enviar') {
+                icon.className = "mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-indigo-100 text-indigo-600";
+                icon.innerHTML = '<i data-lucide="send"></i>';
+                titulo.innerText = "¿Enviar a la Nube?";
+                msj.innerText = "Esta acción guardará permanentemente los datos en Google Sheets.";
+                btn.className = "w-full py-4 rounded-2xl font-black text-white shadow-lg bg-indigo-600";
+                btn.innerText = "SÍ, GUARDAR TODO";
+                btn.onclick = enviarAGoogleSheets;
+            } else if(accion === 'eliminarProducto') {
+                // Eliminación directa para no ser tan intrusivo en productos
+                const caratula = caratulasActivas.find(c => c.id === idCaratulaActual);
+                caratula.productos = caratula.productos.filter(p => p.id !== id);
+                saveLocalStorage(); renderProductos(); cerrarConfirm(); return;
+            }
+            
+            modal.classList.remove('hidden');
+            lucide.createIcons();
         }
-        
-        function limpiar() { 
-            document.getElementById('prod_nombre').value = ""; 
-            iPrecio.value = ""; 
-            iCant.value = 1; 
+
+        function cerrarConfirm() { document.getElementById('modalConfirmar').classList.add('hidden'); }
+
+        // --- ENVÍO DE DATOS (MANTENIENDO LÓGICA ORIGINAL) ---
+        async function enviarAGoogleSheets() {
+            const caratula = caratulasActivas.find(c => c.id === idCaratulaActual);
+            if(!caratula || caratula.productos.length === 0) return alert("No hay productos");
+
+            cerrarConfirm();
+            const btn = document.querySelector('[onclick="confirmarEnvio()"]');
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="animate-spin mr-2">⏳</span> ENVIANDO...';
+
+            const m = new Date().toLocaleString('es-GT', {month: 'long'}).toUpperCase();
+            const f = new Date().toISOString().split('T')[0];
+
+            try {
+                for (let p of caratula.productos) {
+                    const params = new URLSearchParams();
+                    params.append('FECHA', f); params.append('MES', m);
+                    params.append('DESCRIPCION', caratula.descripcion);
+                    params.append('SUPERMERCADO', caratula.supermercado);
+                    params.append('CANTIDAD', p.cantidad); params.append('NOMBRE', p.nombre);
+                    params.append('PESO_O_TAMANO', p.peso); params.append('PRECIO', p.precio);
+                    params.append('SUBTOTAL', p.subtotal);
+                    await fetch(SCRIPT_URL, { method: 'POST', body: params });
+                }
+                alert("¡Compra guardada con éxito!");
+                caratulasActivas = caratulasActivas.filter(c => c.id !== idCaratulaActual);
+                saveLocalStorage();
+                switchView('viewCaratulas');
+                renderCaratulas();
+                loadData(); // Recargar historial
+            } catch (e) {
+                alert("Error al enviar. Verifica tu conexión.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            }
+        }
+
+        function confirmarEnvio() { pedirConfirmacion('enviar', idCaratulaActual); }
+
+        // --- HISTORIAL Y BUSQUEDA GENERAL ---
+        function filtrarHistorial() {
+            const v = document.getElementById('hist_search_general').value.toLowerCase();
+            const cont = document.getElementById('cont_historial_agrupado');
+            
+            // Agrupar historialDB por Fecha + Supermercado para simular carátulas
+            const grupos = {};
+            historialDB.forEach(r => {
+                const key = `${r.FECHA} | ${r.SUPERMERCADO}`;
+                if(!grupos[key]) grupos[key] = [];
+                grupos[key].push(r);
+            });
+
+            cont.innerHTML = "";
+            Object.keys(grupos).forEach(key => {
+                const prods = grupos[key];
+                const matches = prods.filter(p => 
+                    p.NOMBRE.toLowerCase().includes(v) || 
+                    p.SUPERMERCADO.toLowerCase().includes(v) ||
+                    p.FECHA.includes(v)
+                );
+
+                if(matches.length > 0) {
+                    const total = matches.reduce((a, b) => a + parseFloat(b.SUBTOTAL), 0);
+                    cont.innerHTML += `
+                        <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100">
+                            <div class="bg-slate-50 p-4 border-b">
+                                <p class="text-[10px] font-black text-indigo-500 uppercase">${key.split('|')[0]}</p>
+                                <h4 class="font-black text-slate-800">${key.split('|')[1]}</h4>
+                            </div>
+                            <div class="p-4 space-y-2">
+                                ${matches.map(m => `
+                                    <div class="flex justify-between text-xs border-b border-dashed pb-1">
+                                        <span>${m.NOMBRE} (Cant. ${m.CANTIDAD})</span>
+                                        <span class="font-bold">Q${parseFloat(m.SUBTOTAL).toFixed(2)}</span>
+                                    </div>
+                                `).join('')}
+                                <p class="text-right font-black text-indigo-600 pt-2">Q ${total.toFixed(2)}</p>
+                            </div>
+                        </div><br><br>`;
+                }
+            });
+        }
+
+        // --- UTILIDADES ---
+        function saveLocalStorage() { localStorage.setItem('caratulas_v2', JSON.stringify(caratulasActivas)); }
+        function loadLocalStorage() {
+            const data = localStorage.getItem('caratulas_v2');
+            if(data) caratulasActivas = JSON.parse(data);
+            renderCaratulas();
+        }
+
+        function normalizarInput(input) {
+            let cursor = input.selectionStart;
+            input.value = input.value.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            input.setSelectionRange(cursor, cursor);
+        }
+
+        function limpiarProdForm() {
+            document.getElementById('prod_nombre').value = "";
+            document.getElementById('prod_precio').value = "";
+            document.getElementById('prod_cantidad').value = 1;
             document.getElementById('prod_peso').value = "";
             document.getElementById('prod_subtotal').innerText = "Q 0.00";
         }
 
-        // --- DASHBOARDS Y GRÁFICAS ---
-        // --- DASHBOARDS Y GRÁFICAS CORREGIDAS ---
-
-        function initDash() {
-            if (historialDB.length === 0) return;
-            poblarChecks();
-            // No llamamos a updateCharts automáticamente para no saturar si hay muchos datos
+        function editarProducto(id) {
+            const caratula = caratulasActivas.find(c => c.id === idCaratulaActual);
+            const p = caratula.productos.find(x => x.id === id);
+            editandoId = id;
+            document.getElementById('prod_nombre').value = p.nombre;
+            document.getElementById('prod_cantidad').value = p.cantidad;
+            document.getElementById('prod_peso').value = p.peso;
+            document.getElementById('prod_precio').value = p.precio;
+            document.getElementById('prod_subtotal').innerText = `Q ${p.subtotal.toFixed(2)}`;
+            document.getElementById('btn_accion_prod').innerHTML = '<i data-lucide="check"></i> ACTUALIZAR';
+            document.getElementById('btn_accion_prod').classList.replace('bg-indigo-600', 'bg-orange-500');
+            lucide.createIcons();
         }
 
-        function updateCharts() {
-            const seleccionados = Array.from(document.querySelectorAll('.prod-check:checked')).map(i => i.value);
-            if (seleccionados.length === 0) return alert("Selecciona al menos un producto");
-
-            // 1. Gráfica Lineal: Evolución de PRECIO por FECHA
-            // Extraemos todas las fechas únicas y las ordenamos cronológicamente
-            const todasLasFechas = [...new Set(historialDB.map(p => p.FECHA))].sort((a, b) => new Date(a) - new Date(b));
-
-            const datasetsLineal = seleccionados.map(prodNombre => {
-                // Buscamos los registros de este producto específico
-                const registrosProducto = historialDB.filter(p => p.NOMBRE === prodNombre);
-                
-                // Mapeamos el precio a cada fecha (si no hubo compra ese día, queda null)
-                const dataPuntos = todasLasFechas.map(fecha => {
-                    const compra = registrosProducto.find(r => r.FECHA === fecha);
-                    return compra ? parseFloat(compra.PRECIO) : null;
-                });
-
-                return {
-                    label: prodNombre,
-                    data: dataPuntos,
-                    borderColor: '#' + Math.floor(Math.random()*16777215).toString(16), // Color aleatorio
-                    tension: 0.3, // Curvatura de la línea
-                    spanGaps: true, // Une los puntos aunque falten fechas intermedias
-                    borderWidth: 3,
-                    pointRadius: 5
-                };
-            });
-
-            if (chartL) chartL.destroy();
-            chartL = new Chart(document.getElementById('chartLineal'), {
-                type: 'line',
-                data: { labels: todasLasFechas, datasets: datasetsLineal },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    plugins: { title: { display: true, text: 'Tendencia de Precios Unitarios' } }
-                }
-            });
-
-            // 2. Gráfica de Columnas: PROMEDIO de Precio Unitario
-            const promediosPrecios = seleccionados.map(prodNombre => {
-                const compras = historialDB.filter(p => p.NOMBRE === prodNombre);
-                const suma = compras.reduce((acc, curr) => acc + parseFloat(curr.PRECIO || 0), 0);
-                return (suma / compras.length).toFixed(2);
-            });
-
-            if (chartC) chartC.destroy();
-            chartC = new Chart(document.getElementById('chartColumnas'), {
-                type: 'bar',
-                data: { 
-                    labels: seleccionados, 
-                    datasets: [{ 
-                        label: 'Precio Promedio (Q)', 
-                        data: promediosPrecios, 
-                        backgroundColor: 'rgba(79, 70, 229, 0.7)',
-                        borderRadius: 8
-                    }] 
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } }
-                }
-            });
+        function resetProdForm() {
+            editandoId = null;
+            document.getElementById('btn_accion_prod').innerHTML = '<i data-lucide="plus"></i> AGREGAR';
+            document.getElementById('btn_accion_prod').classList.replace('bg-orange-500', 'bg-indigo-600');
+            lucide.createIcons();
         }
-        
+
+        // --- LÓGICA DE CÁLCULO EN VIVO ---
+        const iCant = document.getElementById('prod_cantidad');
+        const iPrecio = document.getElementById('prod_precio');
+        [iCant, iPrecio].forEach(inp => inp.addEventListener('input', () => {
+            const c = parseFloat(iCant.value) || 0;
+            const p = parseFloat(iPrecio.value) || 0;
+            document.getElementById('prod_subtotal').innerText = `Q ${(c * p).toFixed(2)}`;
+        }));
+
+        async function loadData() {
+            try {
+                const resp = await fetch(`${SCRIPT_URL}?accion=obtenerDatos`);
+                const result = await resp.json();
+                if (result.success) {
+                    historialDB = result.datos.reverse();
+                    filtrarHistorial();
+                    poblarChecks();
+                }
+            } catch (e) { console.error("Error cargando historial", e); }
+        }
+
+        // Mantenemos funciones de búsqueda en historial para comodidad
+        function buscarEnHistorial(valor) {
+            const dl = document.getElementById('historial_productos');
+            dl.innerHTML = "";
+            if (!valor) return;
+            const matches = historialDB.filter(p => p.NOMBRE.includes(valor));
+            [...new Set(matches.map(m => m.NOMBRE))].forEach(n => {
+                const opt = document.createElement('option');
+                opt.value = n;
+                dl.appendChild(opt);
+            });
+            const rec = historialDB.find(p => p.NOMBRE === valor);
+            if (rec) {
+                document.getElementById('prod_peso').value = rec.PESO_O_TAMANO;
+                document.getElementById('prod_precio').value = rec.PRECIO;
+                iCant.dispatchEvent(new Event('input'));
+            }
+        }
+
+        // --- GRÁFICAS (MANTENIENDO TU LÓGICA CORREGIDA) ---
+        function initDash() { if (historialDB.length > 0) poblarChecks(); }
+
         function poblarChecks() {
             const unicos = [...new Set(historialDB.map(p => p.NOMBRE))];
             const cont = document.getElementById('contenedor_checks');
             cont.innerHTML = unicos.map(n => `
-                <label class="item-check flex items-center gap-2 text-xs p-1 hover:bg-slate-50">
+                <label class="item-check flex items-center gap-2 text-xs p-2 hover:bg-indigo-50 rounded-lg">
                     <input type="checkbox" value="${n}" class="prod-check"> ${n}
                 </label>
             `).join('');
@@ -364,103 +553,47 @@
             });
         }
 
-        function toggleTodos(c) { document.querySelectorAll('.prod-check').forEach(i => i.checked = c); }
-        
-        /* */
-        function clearInput(id, defaultValue = "") {
-            const input = document.getElementById(id);
-            input.value = defaultValue;
-            
-            // Disparamos el evento para que la lógica de consulta y subtotales se actualice
-            input.dispatchEvent(new Event('input'));
-            
-            // Limpieza específica de etiquetas visuales de consulta
-            if(id === 'prod_nombre') {
-                document.getElementById('label_cant_anterior').classList.add('hidden');
-                document.getElementById('historial_productos').innerHTML = "";
-            }
-            
-            input.focus(); // Mantiene el teclado abierto en móviles
-            lucide.createIcons(); // Refresca iconos si es necesario
-        }
-        /**
-         * Normaliza el texto de un input: Mayúsculas y sin tildes.
-         */
-        
-        /* */
-        function normalizarInput(input) {
-            let cursor = input.selectionStart; // Guardamos la posición del cursor
-            let valor = input.value;
-            
-            // Convertir a Mayúsculas y quitar tildes
-            valor = valor.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            
-            input.value = valor;
-            input.setSelectionRange(cursor, cursor); // Restauramos el cursor para que no salte al final
-        }
+        function updateCharts() {
+            const seleccionados = Array.from(document.querySelectorAll('.prod-check:checked')).map(i => i.value);
+            if (seleccionados.length === 0) return alert("Selecciona productos");
 
-        async function enviarAGoogleSheets() {
-            const btn = document.getElementById('btnGuardar');
-            btn.disabled = true;
-            btn.innerText = "ENVIANDO...";
-            
-            const m = new Date().toLocaleString('es-GT', {month: 'long'}).toUpperCase();
-            const f = new Date().toISOString().split('T')[0];
+            const todasLasFechas = [...new Set(historialDB.map(p => p.FECHA))].sort((a, b) => new Date(a) - new Date(b));
+            const datasetsLineal = seleccionados.map(prodNombre => {
+                const registros = historialDB.filter(p => p.NOMBRE === prodNombre);
+                return {
+                    label: prodNombre,
+                    data: todasLasFechas.map(f => {
+                        const c = registros.find(r => r.FECHA === f);
+                        return c ? parseFloat(c.PRECIO) : null;
+                    }),
+                    borderColor: `hsl(${Math.random() * 360}, 70%, 50%)`,
+                    spanGaps: true, tension: 0.3
+                };
+            });
 
-            for (let p of productosCarrito) {
-                const params = new URLSearchParams();
-                params.append('FECHA', f); params.append('MES', m);
-                params.append('DESCRIPCION', document.getElementById('descripcion').value);
-                params.append('SUPERMERCADO', document.getElementById('supermercado').value);
-                params.append('CANTIDAD', p.cantidad); params.append('NOMBRE', p.nombre);
-                params.append('PESO_O_TAMANO', p.peso); params.append('PRECIO', p.precio);
-                params.append('SUBTOTAL', p.subtotal);
+            if (chartL) chartL.destroy();
+            chartL = new Chart(document.getElementById('chartLineal'), {
+                type: 'line',
+                data: { labels: todasLasFechas, datasets: datasetsLineal },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
 
-                await fetch(SCRIPT_URL, { method: 'POST', body: params });
-            }
-            alert("¡Éxito!");
-            productosCarrito = []; 
-            borrarSesionLocal(); // <--- Limpia la caché porque ya se envió
-            render();
-            btn.disabled = false; btn.innerHTML = '<i data-lucide="send"></i> GUARDAR';
-            loadData();
-        }
+            const promedios = seleccionados.map(n => {
+                const c = historialDB.filter(p => p.NOMBRE === n);
+                return (c.reduce((a, b) => a + parseFloat(b.PRECIO), 0) / c.length).toFixed(2);
+            });
 
-        // --- PERSISTENCIA LOCAL ---
-
-        function guardarSesionLocal() {
-            const sesion = {
-                supermercado: document.getElementById('supermercado').value,
-                descripcion: document.getElementById('descripcion').value,
-                carrito: productosCarrito
-            };
-            localStorage.setItem('super_control_cache', JSON.stringify(sesion));
-        }
-
-        function recuperarSesionLocal() {
-            const cache = localStorage.getItem('super_control_cache');
-            if (!cache) return;
-
-            const sesion = JSON.parse(cache);
-            
-            // Restaurar cabecera
-            document.getElementById('supermercado').value = sesion.supermercado || "";
-            document.getElementById('descripcion').value = sesion.descripcion || "";
-            
-            // Restaurar carrito
-            if (sesion.carrito && sesion.carrito.length > 0) {
-                productosCarrito = sesion.carrito;
-                render(); // Dibujar la lista guardada
-            }
-        }
-
-        function borrarSesionLocal() {
-            localStorage.removeItem('super_control_cache');
+            if (chartC) chartC.destroy();
+            chartC = new Chart(document.getElementById('chartColumnas'), {
+                type: 'bar',
+                data: { labels: seleccionados, datasets: [{ label: 'Precio Promedio', data: promedios, backgroundColor: '#4f46e5' }] },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
         }
 
         window.onload = () => {
+            loadLocalStorage();
             loadData();
-            recuperarSesionLocal(); // <--- Recupera lo que quedó pendiente
         };
     </script>
 </body>
