@@ -26,6 +26,7 @@
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-3 z-50 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] pb-6">
         <button onclick="switchView('viewCaratulas')" class="nav-btn flex flex-col items-center text-indigo-600" id="btn-nav-compras">
             <i data-lucide="layout-list"></i><span class="text-[10px] font-bold">COMPRAS</span>
+            <br><br>
         </button>
         <button onclick="switchView('viewHistorial')" class="nav-btn flex flex-col items-center text-slate-400" id="btn-nav-historial">
             <i data-lucide="history"></i><span class="text-[10px] font-bold">HISTORIAL</span>
@@ -56,12 +57,19 @@
     </div>
 
     <div id="viewCompra" class="view-section hidden">
-        <header class="bg-indigo-700 text-white p-6 rounded-b-[2rem] shadow-lg sticky top-0 z-40">
+        <header class="bg-indigo-700 text-white py-3 px-4 rounded-b-[2rem] shadow-lg sticky top-0 z-40">
             <div class="flex items-center gap-3">
-                <button onclick="switchView('viewCaratulas')" class="p-2 bg-indigo-600 rounded-lg"><i data-lucide="chevron-left"></i></button>
-                <div>
-                    <h1 id="header_supermercado" class="text-lg font-black leading-none"></h1>
-                    <p id="header_descripcion" class="text-xs text-indigo-200"></p>
+                <button onclick="switchView('viewCaratulas')" class="p-2 bg-indigo-600 rounded-lg active:scale-90 transition-transform">
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                </button>
+                <div class="flex-1 min-w-0">
+                    <h1 id="header_supermercado" class="text-base font-black leading-tight truncate uppercase tracking-tight"></h1>
+                    <p id="header_descripcion" class="text-[10px] text-indigo-200 truncate opacity-80"></p>
+                </div>
+                
+                <div class="bg-slate-900/40 backdrop-blur-md px-4 py-1.5 rounded-2xl border border-white/10 shadow-lg text-right">
+                    <p class="text-[8px] font-bold text-indigo-200 uppercase leading-none mb-0.5">Total</p>
+                    <p id="total_compra" class="text-lg font-black text-yellow-400 leading-none">Q 0.00</p>
                 </div>
             </div>
         </header>
@@ -70,47 +78,48 @@
             <section class="bg-white p-5 rounded-[2rem] shadow-sm mb-6 border border-slate-200">
                 <div class="space-y-4">
                     <div class="relative">
-                        <input type="text" id="prod_nombre" list="historial_productos" oninput="normalizarInput(this); buscarEnHistorial(this.value)" placeholder="Nombre del producto..." class="w-full p-4 bg-slate-100 rounded-2xl text-lg font-bold">
+                        <input type="text" id="prod_nombre" list="historial_productos" 
+                            autocomplete="off"
+                            oninput="normalizarInput(this); buscarEnHistorial(this.value)" 
+                            placeholder="Nombre del producto..." 
+                            class="w-full p-4 bg-slate-100 rounded-2xl text-lg font-bold focus:ring-2 focus:ring-indigo-400 outline-none">
                         <datalist id="historial_productos"></datalist>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="text-[10px] font-bold text-slate-400 ml-2">CANTIDAD</label>
+                            <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Cantidad</label>
                             <input type="number" id="prod_cantidad" value="1" class="w-full p-4 bg-slate-100 rounded-2xl text-xl font-bold">
                         </div>
                         <div>
-                            <label class="text-[10px] font-bold text-slate-400 ml-2">PESO/TAMAÑO</label>
+                            <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Peso/Medida</label>
                             <input type="text" id="prod_peso" oninput="normalizarInput(this)" placeholder="Ej: 1 Litro" class="w-full p-4 bg-slate-100 rounded-2xl text-lg">
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4 bg-indigo-50 p-4 rounded-2xl items-center">
-                        <input type="number" id="prod_precio" placeholder="Precio Q" class="bg-transparent border-none text-2xl font-black text-indigo-700 w-full focus:ring-0">
+                    <div class="grid grid-cols-2 gap-4 bg-indigo-50 p-4 rounded-2xl items-center border border-indigo-100">
+                        <div>
+                            <label class="text-[10px] font-bold text-indigo-400 ml-1 uppercase">Precio Unitario</label>
+                            <input type="number" id="prod_precio" placeholder="0.00" class="bg-transparent border-none text-2xl font-black text-indigo-700 w-full focus:ring-0 p-0">
+                        </div>
                         <div class="text-right">
                             <p class="text-[10px] font-bold text-indigo-400 uppercase">Subtotal</p>
                             <p id="prod_subtotal" class="text-2xl font-black text-indigo-800 leading-none">Q 0.00</p>
                         </div>
                     </div>
 
-                    <button id="btn_accion_prod" onclick="agregarALista()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg flex justify-center items-center gap-2">
-                        <i data-lucide="plus"></i> AGREGAR
+                    <button id="btn_accion_prod" onclick="agregarALista()" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg flex justify-center items-center gap-2 active:scale-95 transition-all">
+                        <i data-lucide="plus"></i> AGREGAR PRODUCTO
                     </button>
                 </div>
             </section>
 
-            <div class="mb-4">
-                <input type="text" id="searchProductosActuales" oninput="renderProductos()" placeholder="Filtrar productos en esta lista..." class="w-full p-3 rounded-xl border-none shadow-inner bg-white text-sm">
+            <div class="mb-6">
+                <input type="text" id="searchProductosActuales" oninput="renderProductos()" placeholder="Filtrar en esta lista..." class="w-full p-4 rounded-2xl border-none shadow-inner bg-white text-sm focus:ring-2 focus:ring-slate-200">
             </div>
 
             <div id="lista_contenedor" class="space-y-3"></div>
         </main>
-
-        <footer class="fixed bottom-20 left-4 right-4 z-40">
-            <div class="bg-slate-900 text-white p-4 rounded-3xl flex justify-between items-center shadow-2xl">
-                <div><p class="text-[10px] text-slate-400 font-bold uppercase">Total Actual</p><p id="total_compra" class="text-xl font-black text-yellow-400">Q 0.00</p></div>
-            </div>
-        </footer>
     </div>
 
     <div id="viewHistorial" class="view-section hidden p-4">
@@ -518,19 +527,32 @@
         // Mantenemos funciones de búsqueda en historial para comodidad
         function buscarEnHistorial(valor) {
             const dl = document.getElementById('historial_productos');
-            dl.innerHTML = "";
-            if (!valor) return;
-            const matches = historialDB.filter(p => p.NOMBRE.includes(valor));
-            [...new Set(matches.map(m => m.NOMBRE))].forEach(n => {
+            dl.innerHTML = ""; // Limpieza total inmediata
+            
+            if (!valor || valor.length < 1) return;
+
+            // Filtrar coincidencias exactas del historial
+            const term = valor.toUpperCase();
+            const matches = historialDB.filter(p => p.NOMBRE.toUpperCase().includes(term));
+            
+            // Crear un Set para evitar duplicados visuales
+            const uniqueNames = [...new Set(matches.map(m => m.NOMBRE))];
+            
+            // Solo mostrar las primeras 6 sugerencias para evitar que el teclado tape la lista en móviles
+            uniqueNames.slice(0, 6).forEach(n => {
                 const opt = document.createElement('option');
                 opt.value = n;
                 dl.appendChild(opt);
             });
-            const rec = historialDB.find(p => p.NOMBRE === valor);
+
+            // Autocompletar datos si el nombre coincide exactamente con uno del historial
+            const rec = historialDB.find(p => p.NOMBRE.toUpperCase() === term);
             if (rec) {
-                document.getElementById('prod_peso').value = rec.PESO_O_TAMANO;
-                document.getElementById('prod_precio').value = rec.PRECIO;
-                iCant.dispatchEvent(new Event('input'));
+                document.getElementById('prod_peso').value = rec.PESO_O_TAMANO || "";
+                document.getElementById('prod_precio').value = rec.PRECIO || "";
+                // Disparar evento para actualizar subtotal
+                const event = new Event('input');
+                document.getElementById('prod_precio').dispatchEvent(event);
             }
         }
 
@@ -596,5 +618,6 @@
             loadData();
         };
     </script>
+
 </body>
 </html>
