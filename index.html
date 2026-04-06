@@ -145,6 +145,7 @@
         <div class="space-y-6">
             <div class="bg-white p-4 rounded-2xl shadow-sm h-64"><canvas id="chartLineal"></canvas></div>
             <div class="bg-white p-4 rounded-2xl shadow-sm h-64"><canvas id="chartColumnas"></canvas></div>
+            <br><br><br><br>
         </div>
     </div>
 
@@ -326,7 +327,7 @@
                                 <button onclick="editarProducto(${p.id})" class="text-blue-400 p-2"><i data-lucide="edit-3" class="w-4"></i></button>
                                 <button onclick="pedirConfirmacion('eliminarProducto', ${p.id})" class="text-red-400 p-2"><i data-lucide="trash-2" class="w-4"></i></button>
                             </div>
-						</div><br><br>`;
+						</div>`;
                 }
             });
             document.getElementById('total_compra').innerText = `Q ${t.toFixed(2)}`;
@@ -455,7 +456,7 @@
                                 `).join('')}
                                 <p class="text-right font-black text-indigo-600 pt-2">Q ${total.toFixed(2)}</p>
                             </div>
-                        </div><br><br>`;
+                        </div><br><br><br><br><br>`;
                 }
             });
         }
@@ -611,6 +612,7 @@
                 data: { labels: seleccionados, datasets: [{ label: 'Precio Promedio', data: promedios, backgroundColor: '#4f46e5' }] },
                 options: { responsive: true, maintainAspectRatio: false }
             });
+            cont.innerHTML += ``;
         }
 
         window.onload = () => {
