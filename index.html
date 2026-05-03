@@ -233,20 +233,22 @@
         function cerrarModal() { document.getElementById('modalCaratula').classList.add('hidden'); }
 
         function guardarCaratula() {
-            const s = document.getElementById('modal_super').value;
-            const d = document.getElementById('modal_desc').value;
-            if(!s) return alert("Escribe el nombre del súper");
-
-            if(editandoCaratulaId) {
-                caratulasActivas = caratulasActivas.map(c => c.id === editandoCaratulaId ? {...c, supermercado: s, descripcion: d} : c);
-            } else {
-                caratulasActivas.push({ id: Date.now(), supermercado: s, descripcion: d, productos: [] });
-            }
-            
-            saveLocalStorage();
-            renderCaratulas();
-            cerrarModal();
-        }
+		    // Aplicamos .trim() aquí, justo antes de guardar en el array
+		    const s = document.getElementById('modal_super').value.trim();
+		    const d = document.getElementById('modal_desc').value.trim();
+		    
+		    if(!s) return alert("Escribe el nombre del súper");
+		
+		    if(editandoCaratulaId) {
+		        caratulasActivas = caratulasActivas.map(c => c.id === editandoCaratulaId ? {...c, supermercado: s, descripcion: d} : c);
+		    } else {
+		        caratulasActivas.push({ id: Date.now(), supermercado: s, descripcion: d, productos: [] });
+		    }
+		    
+		    saveLocalStorage();
+		    renderCaratulas();
+		    cerrarModal();
+		}
 
         function entrarACompra(id) {
             idCaratulaActual = id;
@@ -548,9 +550,9 @@
         //     input.setSelectionRange(cursor, cursor);
         // }
         function limpiarTexto(texto) {
-            return texto.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-        }
-
+		    // Eliminamos .trim() para permitir espacios intermedios y finales durante la escritura
+		    return texto.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+		}
         function normalizarInput(input) {
             let cursor = input.selectionStart;
             input.value = limpiarTexto(input.value);
