@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Súper Control RT Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -77,13 +78,22 @@
         <main class="p-4 max-w-lg mx-auto">
             <section class="bg-white p-5 rounded-[2rem] shadow-sm mb-6 border border-slate-200">
                 <div class="space-y-4">
-                    <div class="relative">
+                    <!-- <div class="relative">
                         <input type="text" id="prod_nombre" list="historial_productos" 
                             autocomplete="off"
                             oninput="normalizarInput(this); buscarEnHistorial(this.value)" 
                             placeholder="Nombre del producto..." 
                             class="w-full p-4 bg-slate-100 rounded-2xl text-lg font-bold focus:ring-2 focus:ring-indigo-400 outline-none">
                         <datalist id="historial_productos"></datalist>
+                    </div> -->
+                    <div class="relative">
+                        <input type="text" id="prod_nombre" 
+                            autocomplete="off"
+                            oninput="normalizarInput(this); buscarEnHistorialCustom(this.value)" 
+                            placeholder="Nombre del producto..." 
+                            class="w-full p-4 bg-slate-100 rounded-2xl text-lg font-bold focus:ring-2 focus:ring-indigo-400 outline-none">
+                        <!-- Nueva lista de sugerencias personalizada -->
+                        <div id="sugerencias_container" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 shadow-xl rounded-2xl z-[60] overflow-hidden"></div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
@@ -115,7 +125,8 @@
             </section>
 
             <div class="mb-6">
-                <input type="text" id="searchProductosActuales" oninput="renderProductos()" placeholder="Filtrar en esta lista..." class="w-full p-4 rounded-2xl border-none shadow-inner bg-white text-sm focus:ring-2 focus:ring-slate-200">
+                <input type="text" id="searchProductosActuales" oninput="normalizarInput(this); renderProductos()" placeholder="Filtrar en esta lista..." class="w-full p-4 rounded-2xl border-none shadow-inner bg-white text-sm focus:ring-2 focus:ring-slate-200">
+                <!-- <input type="text" id="searchProductosActuales" oninput="renderProductos()" placeholder="Filtrar en esta lista..." class="w-full p-4 rounded-2xl border-none shadow-inner bg-white text-sm focus:ring-2 focus:ring-slate-200"> -->
             </div>
 
             <div id="lista_contenedor" class="space-y-3"></div>
@@ -132,8 +143,8 @@
         </div>
 
         <div id="cont_historial_agrupado" class="space-y-4">
-            </div>
-		<br><br><br><br><br>
+        </div>
+        <br><br><br><br><br>
     </div>
 
     <div id="viewDash" class="view-section hidden p-4">
@@ -297,6 +308,10 @@
                             <button onclick="confirmarEnvio()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black flex justify-center items-center gap-2 shadow-md active:scale-95 transition-all">
                                 <i data-lucide="send" class="w-4"></i> GUARDAR EN LA NUBE
                             </button>
+                            
+                            <button onclick="descargarExcel(${c.id})" class="w-full bg-emerald-600 text-white py-3 rounded-2xl font-black flex justify-center items-center gap-2 shadow-md active:scale-95 transition-all text-sm">
+                                <i data-lucide="download" class="w-4"></i> DESCARGAR EXCEL (LOCAL)
+                            </button>
                             <div class="flex gap-2">
                                 <button onclick="abrirModalCaratula(${c.id})" class="flex-1 flex justify-center py-2 text-blue-500 font-bold text-xs uppercase"><i data-lucide="edit" class="w-4 mr-1"></i> Editar</button>
                                 <button onclick="pedirConfirmacion('eliminarCaratula', ${c.id})" class="flex-1 flex justify-center py-2 text-red-500 font-bold text-xs uppercase"><i data-lucide="trash-2" class="w-4 mr-1"></i> Borrar</button>
@@ -308,14 +323,14 @@
         }
 
         function renderProductos() {
-            const query = document.getElementById('searchProductosActuales').value.toLowerCase();
+            const query = limpiarTexto(document.getElementById('searchProductosActuales').value);
             const caratula = caratulasActivas.find(c => c.id === idCaratulaActual);
             const cont = document.getElementById('lista_contenedor');
             cont.innerHTML = "";
             let t = 0;
 
             caratula.productos.forEach(p => {
-                if(p.nombre.toLowerCase().includes(query)) {
+                if(limpiarTexto(p.nombre).includes(query)) {
                     t += p.subtotal;
                     cont.innerHTML += `
                         <div class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm border border-slate-100">
@@ -415,6 +430,35 @@
                 btn.innerHTML = originalHTML;
             }
         }
+        
+        function descargarExcel(id) {
+            // 1. Validar que la librería esté cargada
+            if (typeof XLSX === 'undefined') {
+                return alert("La librería de Excel aún se está cargando. Intenta de nuevo en un segundo.");
+            }
+
+            const c = caratulasActivas.find(x => x.id === id);
+            if (!c || c.productos.length === 0) return alert("No hay productos para exportar");
+
+            // 2. Preparar los datos
+            const dataParaExcel = c.productos.map(p => ({
+                Supermercado: c.supermercado,
+                Producto: p.nombre,
+                Cantidad: p.cantidad,
+                Medida: p.peso,
+                Precio_Unitario: p.precio,
+                Subtotal: p.subtotal
+            }));
+
+            // 3. Crear el libro de trabajo
+            const ws = XLSX.utils.json_to_sheet(dataParaExcel);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Lista de Compra");
+
+            // 4. Generar la descarga
+            const nombreArchivo = `Compra_${c.supermercado.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, nombreArchivo);
+        }
 
         function confirmarEnvio() { pedirConfirmacion('enviar', idCaratulaActual); }
 
@@ -470,12 +514,20 @@
             renderCaratulas();
         }
 
-        function normalizarInput(input) {
-            let cursor = input.selectionStart;
-            input.value = input.value.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            input.setSelectionRange(cursor, cursor);
+        // function normalizarInput(input) {
+        //     let cursor = input.selectionStart;
+        //     input.value = input.value.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        //     input.setSelectionRange(cursor, cursor);
+        // }
+        function limpiarTexto(texto) {
+            return texto.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         }
 
+        function normalizarInput(input) {
+            let cursor = input.selectionStart;
+            input.value = limpiarTexto(input.value);
+            input.setSelectionRange(cursor, cursor);
+        }
         function limpiarProdForm() {
             document.getElementById('prod_nombre').value = "";
             document.getElementById('prod_precio').value = "";
@@ -527,36 +579,79 @@
         }
 
         // Mantenemos funciones de búsqueda en historial para comodidad
-        function buscarEnHistorial(valor) {
-            const dl = document.getElementById('historial_productos');
-            dl.innerHTML = ""; // Limpieza total inmediata
+        // function buscarEnHistorial(valor) {
+        //     const dl = document.getElementById('historial_productos');
+        //     dl.innerHTML = ""; // Limpieza total inmediata
             
-            if (!valor || valor.length < 1) return;
+        //     if (!valor || valor.length < 1) return;
 
-            // Filtrar coincidencias exactas del historial
-            const term = valor.toUpperCase();
-            const matches = historialDB.filter(p => p.NOMBRE.toUpperCase().includes(term));
+        //     // Filtrar coincidencias exactas del historial
+        //     const term = valor.toUpperCase();
+        //     const matches = historialDB.filter(p => p.NOMBRE.toUpperCase().includes(term));
             
-            // Crear un Set para evitar duplicados visuales
-            const uniqueNames = [...new Set(matches.map(m => m.NOMBRE))];
+        //     // Crear un Set para evitar duplicados visuales
+        //     const uniqueNames = [...new Set(matches.map(m => m.NOMBRE))];
             
-            // Solo mostrar las primeras 6 sugerencias para evitar que el teclado tape la lista en móviles
-            uniqueNames.slice(0, 6).forEach(n => {
-                const opt = document.createElement('option');
-                opt.value = n;
-                dl.appendChild(opt);
-            });
+        //     // Solo mostrar las primeras 6 sugerencias para evitar que el teclado tape la lista en móviles
+        //     uniqueNames.slice(0, 6).forEach(n => {
+        //         const opt = document.createElement('option');
+        //         opt.value = n;
+        //         dl.appendChild(opt);
+        //     });
 
-            // Autocompletar datos si el nombre coincide exactamente con uno del historial
-            const rec = historialDB.find(p => p.NOMBRE.toUpperCase() === term);
-            if (rec) {
-                document.getElementById('prod_peso').value = rec.PESO_O_TAMANO || "";
-                document.getElementById('prod_precio').value = rec.PRECIO || "";
-                // Disparar evento para actualizar subtotal
-                const event = new Event('input');
-                document.getElementById('prod_precio').dispatchEvent(event);
+        //     // Autocompletar datos si el nombre coincide exactamente con uno del historial
+        //     const rec = historialDB.find(p => p.NOMBRE.toUpperCase() === term);
+        //     if (rec) {
+        //         document.getElementById('prod_peso').value = rec.PESO_O_TAMANO || "";
+        //         document.getElementById('prod_precio').value = rec.PRECIO || "";
+        //         // Disparar evento para actualizar subtotal
+        //         const event = new Event('input');
+        //         document.getElementById('prod_precio').dispatchEvent(event);
+        //     }
+        // }
+        function buscarEnHistorialCustom(valor) {
+            const cont = document.getElementById('sugerencias_container');
+            cont.innerHTML = "";
+            
+            if (!valor || valor.length < 1) {
+                cont.classList.add('hidden');
+                return;
+            }
+
+            const term = limpiarTexto(valor);
+            const matches = historialDB.filter(p => limpiarTexto(p.NOMBRE).includes(term));
+            const uniqueNames = [...new Set(matches.map(m => m.NOMBRE))].slice(0, 5);
+
+            if (uniqueNames.length > 0) {
+                cont.classList.remove('hidden');
+                uniqueNames.forEach(n => {
+                    const div = document.createElement('div');
+                    div.className = "p-4 border-b border-slate-100 active:bg-indigo-100 font-bold text-slate-700 cursor-pointer";
+                    div.innerText = n;
+                    div.onclick = () => {
+                        document.getElementById('prod_nombre').value = n;
+                        cont.classList.add('hidden');
+                        // Auto-completar datos si existen
+                        const rec = historialDB.find(p => p.NOMBRE === n);
+                        if(rec) {
+                            document.getElementById('prod_peso').value = rec.PESO_O_TAMANO || "";
+                            document.getElementById('prod_precio').value = rec.PRECIO || "";
+                            iPrecio.dispatchEvent(new Event('input'));
+                        }
+                    };
+                    cont.appendChild(div);
+                });
+            } else {
+                cont.classList.add('hidden');
             }
         }
+
+        // Cerrar lista si se toca fuera
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#prod_nombre')) {
+                document.getElementById('sugerencias_container').classList.add('hidden');
+            }
+        });
 
         // --- GRÁFICAS (MANTENIENDO TU LÓGICA CORREGIDA) ---
         function initDash() { if (historialDB.length > 0) poblarChecks(); }
@@ -615,6 +710,7 @@
             });
             cont.innerHTML += ``;
         }
+        
 
         window.onload = () => {
             loadLocalStorage();
