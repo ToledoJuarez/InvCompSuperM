@@ -431,7 +431,7 @@
             }
         }
         
-        function descargarExcel(id) {
+		function descargarExcel(id) {
             // 1. Validar que la librería esté cargada
             if (typeof XLSX === 'undefined') {
                 return alert("La librería de Excel aún se está cargando. Intenta de nuevo en un segundo.");
@@ -450,16 +450,44 @@
                 Subtotal: p.subtotal
             }));
 
-            // 3. Crear el libro de trabajo
+            // 3. Crear el libro de trabajo (Workbook)
             const ws = XLSX.utils.json_to_sheet(dataParaExcel);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Lista de Compra");
 
-            // 4. Generar la descarga
-            const nombreArchivo = `Compra_${c.supermercado.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
-            XLSX.writeFile(wb, nombreArchivo);
+            // 4. Generar el archivo compatible con móviles
+            // Generamos un buffer binario
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            
+            // Creamos un Blob con el tipo de contenido correcto para Excel
+            const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            
+            // Definimos el nombre del archivo
+            const fecha = new Date().toISOString().split('T')[0];
+            const nombreArchivo = `Compra_${c.supermercado.replace(/\s+/g, '_')}_${fecha}.xlsx`;
+
+            // 5. Método de descarga universal (PC y Móvil)
+            if (navigator.msSaveBlob) {
+                // Compatibilidad para Internet Explorer antiguo
+                navigator.msSaveBlob(blob, nombreArchivo);
+            } else {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                document.body.appendChild(a);
+                a.style = "display: none";
+                a.href = url;
+                a.download = nombreArchivo;
+                
+                // Simular clic para iniciar descarga
+                a.click();
+                
+                // Limpiar memoria
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            }
         }
 
+		
         function confirmarEnvio() { pedirConfirmacion('enviar', idCaratulaActual); }
 
         // --- HISTORIAL Y BUSQUEDA GENERAL ---
